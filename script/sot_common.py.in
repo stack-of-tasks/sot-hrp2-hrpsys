@@ -1,0 +1,170 @@
+# -*- coding: utf-8 -*-
+# Copyright 2011, Florent Lamiraux, Thomas Moulard, JRL, CNRS/AIST
+#
+# This file is part of sot-openhrp.
+# sot-openhrp is free software: you can redistribute it and/or
+# modify it under the terms of the GNU Lesser General Public License
+# as published by the Free Software Foundation, either version 3 of
+# the License, or (at your option) any later version.
+#
+# sot-openhrp is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Lesser Public License for more details.  You should have
+# received a copy of the GNU Lesser General Public License along with
+# sot-openhrp. If not, see <http://www.gnu.org/licenses/>.
+
+import hrp
+import time
+import hstsetup
+
+# CAUTION: the half-sitting contained in dynamic-graph
+# does *not* match the one in OpenHRP, this dictionnary
+# contains the real starting positions!
+initialPositions = {
+    'HRP2LAAS':
+        "0 0 -26 50 -24 0 "
+    + "0 0 -26 50 -24 0 "
+    + "0 0 "
+    + "0 0 "
+    + "15 -10 0 -30 0 0 5.7 "
+    + "15  10 0 -30 0 0 5.7 "
+    + "5.7 5.7 5.7 5.7 5.7 "
+    + "5.7 5.7 5.7 5.7 5.7 ",
+
+    'HRP2JRL':         
+        "0 0 -26 50 -24 0 "
+    + "0 0 -26 50 -24 0 "
+    + "0 0 "
+    + "0 0 "
+    + "15 -10 0 -30 0 0 0 5.7 "
+    + "15  10 0 -30 0 0 0 5.7 "
+    + "5.7 5.7 5.7 5.7 5.7 "
+    + "5.7 5.7 5.7 5.7 5.7 ",
+        }
+
+class Experiment(object):
+    Name = '@ROBOT@'
+    isInteractive = False
+    enableStabilizer = True
+
+    DOF        = 0
+    Manager    = None
+    Robot      = None
+    SeqPlay    = None
+    Logger     = None
+    KalmanF    = None
+    Stabilizer = None
+    SoT        = None
+
+
+    def __init__(self, enableStabilizer=True, isInteractive=False):
+        """
+        Load and create all plug-ins.
+        """
+        self.enableStabilizer = enableStabilizer
+        self.isInteractive = isInteractive
+        self.systemInit()
+
+    def initPlugin(self, _p, _n):
+        """
+        Initialize one plug-in.
+        """
+        self.Manager.load(_p)
+        return self.Manager.create(_p, _n, '')
+
+    def systemInit(self):
+        """
+        Start CORBA and initialize all plug-ins.
+        """
+        hrp.initCORBA()
+        self.initPlugins()
+
+    def initPlugins(self):
+        """
+        Initialize all plug-ins.
+        """
+
+        # WARNING: order _matters_!
+        # --------------------
+        # The plug-in creation order corresponds
+        # to the order the plug-ins will be executed in
+        # the control loop.
+
+        print ("Create plug-ins.")
+        self.Manager = hrp.findPluginManager("motionsys")
+        self.KalmanF = self.initPlugin('kfplugin', 'kf')
+        self.SeqPlay = hrp.SequencePlayerHelper.narrow(
+            self.initPlugin('seqplay', 'seq'))
+        self.SoT = self.initPlugin("StackOfTasks", "sot")
+        if self.enableStabilizer:
+            self.Stabilizer = self.initPlugin('hstabilizer', 'st')
+        self.Logger  = hrp.LoggerPluginHelper.narrow(
+            self.initPlugin('logplugin', 'log'))
+
+        # Start plug-ins.
+        print ("Start plug-ins.")
+        print ("\t * kalman filter")
+        self.KalmanF.start()
+        print ("\t * sequence player")
+        self.SeqPlay.start()
+
+        # Setup logger.
+        self.Logger.add("kf")
+        if self.enableStabilizer:
+            self.Logger.add("st")
+        self.Logger.sendMsg(":max-length 80")
+        print ("\t * logger")
+        self.Logger.start()
+
+        # Setup the stabilizer.
+        if self.Stabilizer:
+            hstsetup.stsetup(self.Stabilizer)
+            print ("\t * stabilizer")
+            self.Stabilizer.start()
+
+    def run(self):
+        """
+        Start the experiment.
+        """
+
+        print ("Go to half-sitting.")
+
+        # Go to half-sitting in 2.5 seconds.
+        angles = ""
+        self.SeqPlay.sendMsg(
+            ":joint-angles " + initialPositions[self.Name] + " 2.5")
+
+        # Wait for seqplay movement to finish.
+        self.SeqPlay.waitInterpolation()
+
+        # Start the dynamic-graph.
+        print("Experiment is starting.")
+        self.SoT.sendMsg(":initialize")
+        self.SoT.start()
+
+        # Wait until the menu is closed.
+	waitInputMenu([[
+                '------- Close to stop the SoT ----------',
+                '#label'
+                ]])
+
+        # Cleanup and destroy.
+        print("Stopping the experiment.")
+        #self.SoT.stop()
+        self.SoT.sendMsg(":finalize")
+
+        # Make sure seqplay goes toward current position
+        # to avoid discontinuities.
+        self.SeqPlay.goActual()
+        self.SeqPlay.waitInterpolation()
+
+        # /!\ NEVER destroy the StackOfTasks
+        # as long as the SoT doesn't ensure continous movement
+        # from its last command to half-sitting.
+
+        self.Logger.stop()
+
+        logFilename = "/tmp/hrp_sot"
+        self.Logger.save(logFilename)
+        print("Experiment is finished (logging file is: " + logFilename + ").")

@@ -47,6 +47,8 @@ namespace dynamicgraph
 	register_method (":initialize", (method_t) &Plugin::start);
 	register_method (":finalize", (method_t) &Plugin::stop);
 
+	initSotController();
+
 	assigned_time = 0.005;
       }
 
@@ -95,14 +97,16 @@ namespace dynamicgraph
       Plugin::fillSensors(RobotState *rs,
 			  map<string,SensorValues> & SensorsIn)
       {
-	std::vector<double> angles(30);
+	std::vector<double> angles;
+	angles.resize(rs->angle.length());
 	std::vector<double> forces(24);
-	std::vector<double> torques(30);
+	std::vector<double> torques;
+	torques.resize(rs->torque.length());
 	std::vector<double> zmp(3);
 	std::vector<double> basePos(3);
 	std::vector<double> baseAtt(9);
 
-	// Update joint values.
+	// Update joint values.w
 	SensorsIn["joints"].setName("angle");
 	for(unsigned int i=0;i<rs->angle.length();i++)
 	  angles[i] = rs->angle[i];
@@ -110,8 +114,8 @@ namespace dynamicgraph
 	
 	// Update forces
 	SensorsIn["forces"].setName("force");
-	for (int i = 0; i < 4; ++i)
-	  for (int j = 0; j < 6; ++j)
+	for (int i = 0; i < rs->force.length(); ++i)
+	  for (int j = 0; j < rs->force[i].length(); ++j)
 	    forces[i*6+j] = rs->force[i][j];
 	SensorsIn["forces"].setValues(forces);
 
@@ -150,8 +154,6 @@ namespace dynamicgraph
 	for(unsigned int i=0;i<3;++i)
 	  for (int j = 0; j < 3; ++j)
 	    mc->baseAtt[i*3+j] = baseff[i*3+3];
-	
-	
       }
       
       void
@@ -196,6 +198,7 @@ namespace dynamicgraph
       bool
       Plugin::setup (OpenHRP::RobotState* rs, OpenHRP::RobotState* mc)
       {
+	cout << __FUNCTION__ << " " << __LINE__ << " " << endl;
 	if (!started_)
 	  {
 	    std::cout
@@ -207,19 +210,21 @@ namespace dynamicgraph
 	// Log control loop start time.
 	captureTime (t0_);
 
+	cout << __FUNCTION__ << " " << __LINE__ << " " << endl;
 	// Initialize client to seqplay.
 	map<string,SensorValues> SensorsIn;
 	fillSensors(rs,SensorsIn);
-
+	cout << __FUNCTION__ << " " << __LINE__ << " " << endl;
 	std::map<string,ControlValues> controlValues;
 	bool res=false;
 	try
 	  {
 	    sotController_->setupSetSensors(SensorsIn);
+	    cout << __FUNCTION__ << " " << __LINE__ << " " << endl;
 	    sotController_->getControl(controlValues);
 	  } 
 	catch SOT_RETHROW;
-
+	cout << __FUNCTION__ << " " << __LINE__ << " " << endl;
 	readControl(mc,controlValues);
 
 	// Log control loop end time and compute time spent.
@@ -236,7 +241,7 @@ namespace dynamicgraph
 	captureTime (t0_);
 	map<string,SensorValues> SensorsIn;
 	fillSensors(rs,SensorsIn);
-
+	cout << __FUNCTION__ << " " << __LINE__ << " " << endl;
 	std::map<string,ControlValues> controlValues;
 
 	try 
@@ -244,9 +249,9 @@ namespace dynamicgraph
 	    sotController_->setupSetSensors(SensorsIn);
 	    sotController_->getControl(controlValues);
 	  } catch SOT_RETHROW;
-	
+	cout << __FUNCTION__ << " " << __LINE__ << " " << endl;
 	readControl(mc,controlValues);
-
+	cout << __FUNCTION__ << " " << __LINE__ << " " << endl;
 	// Log control loop end time and compute time spent.
 	captureTime (t1_);
 	logTime (t0_, t1_);
@@ -259,7 +264,7 @@ namespace dynamicgraph
 	captureTime (t0_);
 	map<string,SensorValues> SensorsIn;
 	fillSensors(rs,SensorsIn);
-
+	cout << __FUNCTION__ << " " << __LINE__ << " " << endl;
 	std::map<string,ControlValues> controlValues;
 
 	bool res = false;
@@ -268,12 +273,13 @@ namespace dynamicgraph
 	    sotController_->setupSetSensors(SensorsIn);
 	    sotController_->getControl(controlValues);
 	  } catch SOT_RETHROW;
-
+	cout << __FUNCTION__ << " " << __LINE__ << " " << endl;
 	readControl(mc,controlValues);
 
 	// Log control loop end time and compute time spent.
 	captureTime (t1_);
 	logTime (t0_, t1_);
+	cout << __FUNCTION__ << " " << __LINE__ << " " << endl;
 
 	return res;
       }
