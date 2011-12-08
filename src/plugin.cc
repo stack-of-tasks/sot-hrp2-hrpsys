@@ -60,7 +60,7 @@ namespace dynamicgraph
       void Plugin::initSotController()
       {
 	// Load the SotDLRBipedController library.
-	void * SotHRP2ControllerLibrary = dlopen("libsot-hrp2-controller.so",
+	void * SotHRP2ControllerLibrary = dlopen("libsot-hrp2-10-controller.so",
 						 RTLD_GLOBAL | RTLD_NOW);
 	if (!SotHRP2ControllerLibrary) {
 	  std::cerr << "Cannot load library: " << dlerror() << '\n';
@@ -114,14 +114,14 @@ namespace dynamicgraph
 	
 	// Update forces
 	SensorsIn["forces"].setName("force");
-	for (int i = 0; i < rs->force.length(); ++i)
-	  for (int j = 0; j < rs->force[i].length(); ++j)
+	for (unsigned int i = 0; i < rs->force.length(); ++i)
+	  for (unsigned int j = 0; j < rs->force[i].length(); ++j)
 	    forces[i*6+j] = rs->force[i][j];
 	SensorsIn["forces"].setValues(forces);
 
 	// Update torque
 	SensorsIn["torques"].setName("torque");
-	for (int j = 0; j < rs->torque.length(); ++j)
+	for (unsigned int j = 0; j < rs->torque.length(); ++j)
 	  torques[j] = rs->torque[j];
 	SensorsIn["torques"].setValues(torques);
       }
@@ -194,11 +194,37 @@ namespace dynamicgraph
       {
 	started_ = true;
       }
+      
+      void
+      Plugin::displayRobotState(RobotState * ars)
+      {
+	cout << "Angles:";
+	for(unsigned int i=0;i<ars->angle.length();i++)
+	  cout << ars->angle[i] << " " ;
+	cout << endl;
+	
+	cout << "ZMP:";
+	for(unsigned int i=0;i<3;i++)
+	  cout << ars->zmp[i] << " ";
+	cout << endl;
+
+	cout << "basePos: ";
+	for (int j = 0; j < 3; ++j)
+	  cout << ars->basePos[j] << " ";
+	cout << endl;
+	
+	cout << "baseAtt: ";
+	for(unsigned int i=0;i<3;++i)
+	  {
+	    for (int j = 0; j < 3; ++j)
+	      cout << ars->baseAtt[i*3+j]<< " ";
+	    cout << endl;
+	  }
+      }
 
       bool
       Plugin::setup (OpenHRP::RobotState* rs, OpenHRP::RobotState* mc)
       {
-	cout << __FUNCTION__ << " " << __LINE__ << " " << endl;
 	if (!started_)
 	  {
 	    std::cout
@@ -210,30 +236,25 @@ namespace dynamicgraph
 	// Log control loop start time.
 	captureTime (t0_);
 
-	cout << __FUNCTION__ << " " << __LINE__ << " " << endl;
 	// Initialize client to seqplay.
 	map<string,SensorValues> SensorsIn;
 	fillSensors(rs,SensorsIn);
-	cout << __FUNCTION__ << " " << __LINE__ << " " << endl;
 	std::map<string,ControlValues> controlValues;
-	bool res=false;
+
 	try
 	  {
 	    sotController_->setupSetSensors(SensorsIn);
-	    cout << __FUNCTION__ << " " << __LINE__ << " " << endl;
 	    sotController_->getControl(controlValues);
 	  } 
 	catch SOT_RETHROW;
-	cout << __FUNCTION__ << " " << __LINE__ << " " << endl;
 	readControl(mc,controlValues);
 
 	// Log control loop end time and compute time spent.
 	captureTime (t1_);
 	logTime (t0_, t1_);
-
-	return res;
+	return true;
       }
-
+      
       void
       Plugin::control (OpenHRP::RobotState* rs, OpenHRP::RobotState* mc)
       {
@@ -241,7 +262,6 @@ namespace dynamicgraph
 	captureTime (t0_);
 	map<string,SensorValues> SensorsIn;
 	fillSensors(rs,SensorsIn);
-	cout << __FUNCTION__ << " " << __LINE__ << " " << endl;
 	std::map<string,ControlValues> controlValues;
 
 	try 
@@ -249,9 +269,9 @@ namespace dynamicgraph
 	    sotController_->setupSetSensors(SensorsIn);
 	    sotController_->getControl(controlValues);
 	  } catch SOT_RETHROW;
-	cout << __FUNCTION__ << " " << __LINE__ << " " << endl;
 	readControl(mc,controlValues);
-	cout << __FUNCTION__ << " " << __LINE__ << " " << endl;
+
+	//displayRobotState(mc);
 	// Log control loop end time and compute time spent.
 	captureTime (t1_);
 	logTime (t0_, t1_);
@@ -264,7 +284,6 @@ namespace dynamicgraph
 	captureTime (t0_);
 	map<string,SensorValues> SensorsIn;
 	fillSensors(rs,SensorsIn);
-	cout << __FUNCTION__ << " " << __LINE__ << " " << endl;
 	std::map<string,ControlValues> controlValues;
 
 	bool res = false;
@@ -273,14 +292,12 @@ namespace dynamicgraph
 	    sotController_->setupSetSensors(SensorsIn);
 	    sotController_->getControl(controlValues);
 	  } catch SOT_RETHROW;
-	cout << __FUNCTION__ << " " << __LINE__ << " " << endl;
 	readControl(mc,controlValues);
 
 	// Log control loop end time and compute time spent.
 	captureTime (t1_);
 	logTime (t0_, t1_);
-	cout << __FUNCTION__ << " " << __LINE__ << " " << endl;
-
+	res = true;
 	return res;
       }
 

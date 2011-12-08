@@ -121,7 +121,10 @@ namespace dynamicgraph
 	/// \brief Read the control value and fill the mc data structure.
 	void readControl(RobotState *mc,
 			 map<string,ControlValues> & controlValues);
-		
+
+	/// \brief Display the data structure robot state.
+	void displayRobotState(RobotState *rs);
+
 	/// \brief Size of the array logging time spent in control loop.
 	static const unsigned int TIME_ARRAY_SIZE = 100000;
 
