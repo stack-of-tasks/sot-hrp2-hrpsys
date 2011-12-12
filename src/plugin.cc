@@ -60,7 +60,7 @@ namespace dynamicgraph
       void Plugin::initSotController()
       {
 	// Load the SotDLRBipedController library.
-	void * SotHRP2ControllerLibrary = dlopen("libsot-hrp2-10-controller.so",
+	void * SotHRP2ControllerLibrary = dlopen("libsot-hrp2-14-controller.so",
 						 RTLD_GLOBAL | RTLD_NOW);
 	if (!SotHRP2ControllerLibrary) {
 	  std::cerr << "Cannot load library: " << dlerror() << '\n';
