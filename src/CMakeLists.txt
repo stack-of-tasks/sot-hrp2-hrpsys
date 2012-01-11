@@ -65,8 +65,6 @@ INSTALL(TARGETS openhrp DESTINATION lib)
 
 # Declare library dependencies.
 PKG_CONFIG_USE_DEPENDENCY(openhrp "omniORB4")
-PKG_CONFIG_USE_DEPENDENCY(openhrp "dynamic-graph")
-PKG_CONFIG_USE_DEPENDENCY(openhrp "sot-core")
 
 # Install the sample openhrp shell
 INSTALL(FILES
@@ -87,9 +85,6 @@ SET_TARGET_PROPERTIES(StackOfTasks PROPERTIES PREFIX ""
 
 # Declare plug-in dependencies.
 TARGET_LINK_LIBRARIES(StackOfTasks openhrp)
-
-PKG_CONFIG_USE_DEPENDENCY(openhrp "dynamic-graph-python")
-PKG_CONFIG_USE_DEPENDENCY(openhrp "dynamic-graph-corba")
 
 INSTALL(TARGETS StackOfTasks DESTINATION "${ROBOT_PATH}/bin")
 
