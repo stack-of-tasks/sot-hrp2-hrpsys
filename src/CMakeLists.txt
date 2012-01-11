@@ -85,6 +85,9 @@ SET_TARGET_PROPERTIES(StackOfTasks PROPERTIES PREFIX ""
 
 # Declare plug-in dependencies.
 TARGET_LINK_LIBRARIES(StackOfTasks openhrp)
+PKG_CONFIG_USE_DEPENDENCY(StackOfTasks "dynamic-graph")
+PKG_CONFIG_USE_DEPENDENCY(StackOfTasks "dynamic-graph-corba")
+PKG_CONFIG_USE_DEPENDENCY(StackOfTasks "dynamic-graph-python")
 
 INSTALL(TARGETS StackOfTasks DESTINATION "${ROBOT_PATH}/bin")
 
