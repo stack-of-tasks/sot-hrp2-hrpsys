@@ -246,7 +246,7 @@ namespace dynamicgraph
 	    sotController_->setupSetSensors(SensorsIn);
 	    sotController_->getControl(controlValues);
 	  } 
-	catch SOT_RETHROW;
+	catch (std::exception &e) {  throw e; }
 	readControl(mc,controlValues);
 
 	// Log control loop end time and compute time spent.
@@ -268,7 +268,9 @@ namespace dynamicgraph
 	  {
 	    sotController_->setupSetSensors(SensorsIn);
 	    sotController_->getControl(controlValues);
-	  } catch SOT_RETHROW;
+	  } 
+	catch(std::exception &e) { throw e;} 
+
 	readControl(mc,controlValues);
 
 	//displayRobotState(mc);
@@ -291,7 +293,7 @@ namespace dynamicgraph
 	  {
 	    sotController_->setupSetSensors(SensorsIn);
 	    sotController_->getControl(controlValues);
-	  } catch SOT_RETHROW;
+	  } catch(std::exception &e) { throw e;}
 	readControl(mc,controlValues);
 
 	// Log control loop end time and compute time spent.
