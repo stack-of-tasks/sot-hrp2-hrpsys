@@ -153,7 +153,7 @@ namespace dynamicgraph
 	
 	for(unsigned int i=0;i<3;++i)
 	  for (int j = 0; j < 3; ++j)
-	    mc->baseAtt[i*3+j] = baseff[i*3+3];
+	    mc->baseAtt[i*3+j] = baseff[i*4+j];
       }
       
       void
