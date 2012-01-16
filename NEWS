@@ -1,4 +1,11 @@
                                                                 -*- outline -*-
 
-New in X.Y, XXXX-YY-ZZ:
+New in 1.1, 2012-01-16:
 * Initial release.
+Olivier Stasse (5):
+      Remove useless link to libraries.
+      Add dependencies to appropriate libraries.
+      Changes ExceptionAbstract exception to std::exception
+      Remove all the libraries dependencies to dynamic-graph, dynamic-graph-python, dynamic-graph-corba.
+      Fix the way base attitude is send to the robot.
+
