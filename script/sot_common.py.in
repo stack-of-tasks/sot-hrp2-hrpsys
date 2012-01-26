@@ -71,6 +71,11 @@ class Experiment(object):
         Initialize one plug-in.
         """
         self.Manager.load(_p)
+        if _p == "StackOfTasks":
+            if self.Name == "HRP2LAAS":
+                return self.Manager.create(_p,_n, 'libsot-hrp2-14-controller.so')
+            if self.Name == "HRP2JRL":
+                return self.Manager.create(_p,_n, 'libsot-hrp2-10-controller.so')
         return self.Manager.create(_p, _n, '')
 
     def systemInit(self):

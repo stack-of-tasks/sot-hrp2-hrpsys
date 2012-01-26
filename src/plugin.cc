@@ -18,9 +18,11 @@
 
 typedef void (command_receiver::*method_t) (std::istringstream&);
 const std::string DT_DAT_OUTPUT_FILE ("/tmp/dt.dat");
-plugin* create_plugin (istringstream &)
+plugin* create_plugin (istringstream &iss)
 {
-  return new dynamicgraph::sot::openhrp::Plugin ();
+  std::string libname;
+  iss >> libname;
+  return new dynamicgraph::sot::openhrp::Plugin (libname);
 }
 
 namespace dynamicgraph
@@ -29,13 +31,14 @@ namespace dynamicgraph
   {
     namespace openhrp
     {
-      Plugin::Plugin()
+      Plugin::Plugin(std::string &libname)
 	:	  
 	timeArray_ (),
 	timeIndex_ (0),
 	t0_ (),
 	t1_ (),
-	started_ (false)
+	started_ (false),
+	libname_(libname)
       {
 	// Set to zero C structures.
 	bzero (timeArray_, TIME_ARRAY_SIZE * sizeof (double));
@@ -60,7 +63,7 @@ namespace dynamicgraph
       void Plugin::initSotController()
       {
 	// Load the SotDLRBipedController library.
-	void * SotHRP2ControllerLibrary = dlopen("libsot-hrp2-14-controller.so",
+	void * SotHRP2ControllerLibrary = dlopen(libname_.c_str(),
 						 RTLD_GLOBAL | RTLD_NOW);
 	if (!SotHRP2ControllerLibrary) {
 	  std::cerr << "Cannot load library: " << dlerror() << '\n';

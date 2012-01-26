@@ -58,7 +58,7 @@ namespace dynamicgraph
       {
       public:
 
-	explicit Plugin ();
+	explicit Plugin (std::string &libname);
 	virtual ~Plugin ();
 
 	/// \name Inherited control methods.
@@ -145,6 +145,9 @@ namespace dynamicgraph
 
 	/// \brief the sot-hrp2 controller
 	AbstractSotExternalInterface * sotController_;
+
+	/// \brief Name of the controller to load
+	std::string libname_;
       };
 
     } // end of namespace openhrp.
