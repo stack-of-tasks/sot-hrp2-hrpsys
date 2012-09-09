@@ -64,193 +64,209 @@ namespace dynamicgraph
       {
 	// Load the SotDLRBipedController library.
 	void * SotHRP2ControllerLibrary = dlopen(libname_.c_str(),
-						 RTLD_GLOBAL | RTLD_NOW);
-	if (!SotHRP2ControllerLibrary) {
-	  std::cerr << "Cannot load library: " << dlerror() << '\n';
-	  return ;
-	}
-	
-	// reset errors
-	dlerror();
+						  RTLD_GLOBAL | RTLD_NOW);
+	 if (!SotHRP2ControllerLibrary) {
+	   std::cerr << "Cannot load library: " << dlerror() << '\n';
+	   return ;
+	 }
+
+	 // reset errors
+	 dlerror();
+
+	 // Load the symbols.
+	 createSotExternalInterface_t * createHRP2Controller =
+	   (createSotExternalInterface_t *) dlsym(SotHRP2ControllerLibrary, 
+						  "createSotExternalInterface");
+	 const char* dlsym_error = dlerror();
+	 if (dlsym_error) {
+	   std::cerr << "Cannot load symbol create: " << dlsym_error << '\n';
+	   return ;
+	 }
+
+	 destroySotExternalInterface_t * destroyHRP2Controller =
+	   (destroySotExternalInterface_t *) dlsym(SotHRP2ControllerLibrary, 
+						   "destroySotExternalInterface");
+	 dlsym_error = dlerror();
+	 if (dlsym_error) {
+	   std::cerr << "Cannot load symbol create: " << dlsym_error << '\n';
+	   return ;
+	 }
+
+	 // Create hrp2-controller
+	 sotController_ = createHRP2Controller();
+       }
+
+       void 
+       Plugin::fillSensors(RobotState *rs,
+			   map<string,SensorValues> & SensorsIn)
+       {
+	 std::vector<double> angles;
+	 angles.resize(rs->angle.length());
+	 std::vector<double> forces(24);
+	 std::vector<double> torques;
+	 torques.resize(rs->torque.length());
+	 std::vector<double> zmp(3);
+	 std::vector<double> basePos(3);
+	 std::vector<double> baseAtt(9);
+
+	 // Update joint values.w
+	 SensorsIn["joints"].setName("angle");
+	 for(unsigned int i=0;i<rs->angle.length();i++)
+	   angles[i] = rs->angle[i];
+	 SensorsIn["joints"].setValues(angles);
+
+	 // Update forces
+	 SensorsIn["forces"].setName("force");
+	 for (unsigned int i = 0; i < rs->force.length(); ++i)
+	   for (unsigned int j = 0; j < rs->force[i].length(); ++j)
+	     forces[i*6+j] = rs->force[i][j];
+	 SensorsIn["forces"].setValues(forces);
+
+	 // Update torque
+	 SensorsIn["torques"].setName("torque");
+	 for (unsigned int j = 0; j < rs->torque.length(); ++j)
+	   torques[j] = rs->torque[j];
+	 SensorsIn["torques"].setValues(torques);
+       }
+
+       void 
+       Plugin::readControl(RobotState *mc,
+			   map<string,ControlValues> &controlValues)
+       {
+	 std::vector<double> angles(30);
+	 std::vector<double> forces(24);
+	 std::vector<double> torques(30);
+	 std::vector<double> zmp(3);
+	 std::vector<double> baseff(12);
+	 static unsigned int nbit=0;
 	 
-	// Load the symbols.
-	createSotExternalInterface_t * createHRP2Controller =
-	  (createSotExternalInterface_t *) dlsym(SotHRP2ControllerLibrary, 
-						 "createSotExternalInterface");
-	const char* dlsym_error = dlerror();
-	if (dlsym_error) {
-	  std::cerr << "Cannot load symbol create: " << dlsym_error << '\n';
-	  return ;
-	}
+	 // Update joint values.
+	 angles = controlValues["joints"].getValues();
+	 
+	 if (nbit%100==0)
+	   std::cout << "Size of angles: " << angles.size() 
+		     << "Size of mc->angle: " << mc->angle.length() 
+		     << std::endl;
+	 
+	 for(unsigned int i=0;i<angles.size();i++)
+	   {
+	     mc->angle[i] = angles[i];
+	     if (nbit%100==0)
+	       std::cout << mc->angle[i] << " ";
+	   }
 
-	destroySotExternalInterface_t * destroyHRP2Controller =
-	  (destroySotExternalInterface_t *) dlsym(SotHRP2ControllerLibrary, 
-						  "destroySotExternalInterface");
-	dlsym_error = dlerror();
-	if (dlsym_error) {
-	  std::cerr << "Cannot load symbol create: " << dlsym_error << '\n';
-	  return ;
-	}
+	 /* 
+	    if (nbit%100==0)
+	   std::cout << std::endl;
+	   nbit++;
+	 */
 
-	// Create hrp2-controller
-	sotController_ = createHRP2Controller();
-      }
+	 // Update forces
+	 zmp =controlValues["zmp"].getValues();
+	 for(unsigned int i=0;i<3;i++)
+	   mc->zmp[i] = zmp[i];
 
-      void 
-      Plugin::fillSensors(RobotState *rs,
-			  map<string,SensorValues> & SensorsIn)
-      {
-	std::vector<double> angles;
-	angles.resize(rs->angle.length());
-	std::vector<double> forces(24);
-	std::vector<double> torques;
-	torques.resize(rs->torque.length());
-	std::vector<double> zmp(3);
-	std::vector<double> basePos(3);
-	std::vector<double> baseAtt(9);
+	 // Update torque
+	 baseff =controlValues["baseff"].getValues();
+	 for (int j = 0; j < 3; ++j)
+	   mc->basePos[j] = baseff[j*4+3];
 
-	// Update joint values.w
-	SensorsIn["joints"].setName("angle");
-	for(unsigned int i=0;i<rs->angle.length();i++)
-	  angles[i] = rs->angle[i];
-	SensorsIn["joints"].setValues(angles);
-	
-	// Update forces
-	SensorsIn["forces"].setName("force");
-	for (unsigned int i = 0; i < rs->force.length(); ++i)
-	  for (unsigned int j = 0; j < rs->force[i].length(); ++j)
-	    forces[i*6+j] = rs->force[i][j];
-	SensorsIn["forces"].setValues(forces);
+	 for(unsigned int i=0;i<3;++i)
+	   for (int j = 0; j < 3; ++j)
+	     mc->baseAtt[i*3+j] = baseff[i*4+j];
+       }
 
-	// Update torque
-	SensorsIn["torques"].setName("torque");
-	for (unsigned int j = 0; j < rs->torque.length(); ++j)
-	  torques[j] = rs->torque[j];
-	SensorsIn["torques"].setValues(torques);
-      }
+       void
+       Plugin::stop (std::istringstream&)
+       {
+	 // Write log data to file.
+	 writeLog ();
+       }
 
-      void 
-      Plugin::readControl(RobotState *mc,
-			  map<string,ControlValues> &controlValues)
-      {
-	std::vector<double> angles(30);
-	std::vector<double> forces(24);
-	std::vector<double> torques(30);
-	std::vector<double> zmp(3);
-	std::vector<double> baseff(12);
+       void
+       Plugin::writeLog ()
+       {
+	 std::ofstream of (DT_DAT_OUTPUT_FILE.c_str ());
+	 of << "# size = " << timeIndex_ << std::endl;
+	 for (unsigned i = 0; i < timeIndex_; ++i)
+	   of << i << "\t" << timeArray_[i] << std::endl;
+       }
 
-	// Update joint values.
-	angles = controlValues["joints"].getValues();
-	for(unsigned int i=0;i<angles.size();i++)
-	  mc->angle[i] = angles[i];
-	
-	// Update forces
-	zmp =controlValues["zmp"].getValues();
-	for(unsigned int i=0;i<3;i++)
-	  mc->zmp[i] = zmp[i];
+       void
+       Plugin::captureTime (timeval& t)
+       {
+	 gettimeofday (&t, NULL);
+       }
 
-	// Update torque
-	baseff =controlValues["baseff"].getValues();
-	for (int j = 0; j < 3; ++j)
-	  mc->basePos[j] = baseff[j*4+3];
-	
-	for(unsigned int i=0;i<3;++i)
-	  for (int j = 0; j < 3; ++j)
-	    mc->baseAtt[i*3+j] = baseff[i*4+j];
-      }
-      
-      void
-      Plugin::stop (std::istringstream&)
-      {
-	// Write log data to file.
-	writeLog ();
-      }
+       void
+       Plugin::logTime (const timeval& t0, const timeval& t1)
+       {
+	 double dt =
+	   (t1.tv_sec - t0.tv_sec) * 1000.
+	   + (t1.tv_usec - t0.tv_usec + 0.) / 1000.;
 
-      void
-      Plugin::writeLog ()
-      {
-	std::ofstream of (DT_DAT_OUTPUT_FILE.c_str ());
-	of << "# size = " << timeIndex_ << std::endl;
-	for (unsigned i = 0; i < timeIndex_; ++i)
-	  of << i << "\t" << timeArray_[i] << std::endl;
-      }
+	 if (timeIndex_ < TIME_ARRAY_SIZE)
+	   timeArray_[timeIndex_++] = dt;
+       }
 
-      void
-      Plugin::captureTime (timeval& t)
-      {
-	gettimeofday (&t, NULL);
-      }
+       void
+       Plugin::start (std::istringstream&)
+       {
+	 started_ = true;
+       }
 
-      void
-      Plugin::logTime (const timeval& t0, const timeval& t1)
-      {
-	double dt =
-	  (t1.tv_sec - t0.tv_sec) * 1000.
-	  + (t1.tv_usec - t0.tv_usec + 0.) / 1000.;
+       void
+       Plugin::displayRobotState(RobotState * ars)
+       {
+	 cout << "Angles:";
+	 for(unsigned int i=0;i<ars->angle.length();i++)
+	   cout << ars->angle[i] << " " ;
+	 cout << endl;
 
-	if (timeIndex_ < TIME_ARRAY_SIZE)
-	  timeArray_[timeIndex_++] = dt;
-      }
+	 cout << "ZMP:";
+	 for(unsigned int i=0;i<3;i++)
+	   cout << ars->zmp[i] << " ";
+	 cout << endl;
 
-      void
-      Plugin::start (std::istringstream&)
-      {
-	started_ = true;
-      }
-      
-      void
-      Plugin::displayRobotState(RobotState * ars)
-      {
-	cout << "Angles:";
-	for(unsigned int i=0;i<ars->angle.length();i++)
-	  cout << ars->angle[i] << " " ;
-	cout << endl;
-	
-	cout << "ZMP:";
-	for(unsigned int i=0;i<3;i++)
-	  cout << ars->zmp[i] << " ";
-	cout << endl;
+	 cout << "basePos: ";
+	 for (int j = 0; j < 3; ++j)
+	   cout << ars->basePos[j] << " ";
+	 cout << endl;
 
-	cout << "basePos: ";
-	for (int j = 0; j < 3; ++j)
-	  cout << ars->basePos[j] << " ";
-	cout << endl;
-	
-	cout << "baseAtt: ";
-	for(unsigned int i=0;i<3;++i)
-	  {
-	    for (int j = 0; j < 3; ++j)
-	      cout << ars->baseAtt[i*3+j]<< " ";
-	    cout << endl;
-	  }
-      }
+	 cout << "baseAtt: ";
+	 for(unsigned int i=0;i<3;++i)
+	   {
+	     for (int j = 0; j < 3; ++j)
+	       cout << ars->baseAtt[i*3+j]<< " ";
+	     cout << endl;
+	   }
+       }
 
-      bool
-      Plugin::setup (OpenHRP::RobotState* rs, OpenHRP::RobotState* mc)
-      {
-	if (!started_)
-	  {
-	    std::cout
-	      << "Please call ':initialize' before starting the plug-in."
-	      << std::endl;
-	    return false;
-	  }
+       bool
+       Plugin::setup (OpenHRP::RobotState* rs, OpenHRP::RobotState* mc)
+       {
+	 if (!started_)
+	   {
+	     std::cout
+	       << "Please call ':initialize' before starting the plug-in."
+	       << std::endl;
+	     return false;
+	   }
 
-	// Log control loop start time.
-	captureTime (t0_);
+	 // Log control loop start time.
+	 captureTime (t0_);
 
-	// Initialize client to seqplay.
-	map<string,SensorValues> SensorsIn;
-	fillSensors(rs,SensorsIn);
-	std::map<string,ControlValues> controlValues;
-
-	try
-	  {
-	    sotController_->setupSetSensors(SensorsIn);
-	    sotController_->getControl(controlValues);
-	  } 
-	catch (std::exception &e) {  throw e; }
-	readControl(mc,controlValues);
+	 // Initialize client to seqplay.
+	 map<string,SensorValues> SensorsIn;
+	 fillSensors(rs,SensorsIn);
+	 std::map<string,ControlValues> controlValues;
+	 try
+	   {
+	     sotController_->setupSetSensors(SensorsIn);
+	     sotController_->getControl(controlValues);
+	   } 
+	 catch (std::exception &e) {  std::cout << e.what() <<endl;throw e; }
+	 readControl(mc,controlValues);
 
 	// Log control loop end time and compute time spent.
 	captureTime (t1_);
