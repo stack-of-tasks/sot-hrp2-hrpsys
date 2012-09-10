@@ -143,11 +143,12 @@ namespace dynamicgraph
 	 // Update joint values.
 	 angles = controlValues["joints"].getValues();
 	 
+	 /*
 	 if (nbit%100==0)
 	   std::cout << "Size of angles: " << angles.size() 
-		     << "Size of mc->angle: " << mc->angle.length() 
+		     << " Size of mc->angle: " << mc->angle.length() 
 		     << std::endl;
-	 
+	 */
 	 for(unsigned int i=0;i<angles.size();i++)
 	   {
 	     mc->angle[i] = angles[i];
