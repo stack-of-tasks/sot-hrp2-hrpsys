@@ -127,6 +127,12 @@ namespace dynamicgraph
 	 for (unsigned int j = 0; j < rs->torque.length(); ++j)
 	   torques[j] = rs->torque[j];
 	 SensorsIn["torques"].setValues(torques);
+
+	 // Update attitude
+	 SensorsIn["attitude"].setName ("attitude");
+	 for (unsigned int j = 0; j < rs->attitude [0].length (); ++j)
+	   baseAtt [j] = rs->attitude [0][j];
+	 SensorsIn["attitude"].setValues (baseAtt);
        }
 
        void 
