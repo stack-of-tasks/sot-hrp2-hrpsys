@@ -38,7 +38,13 @@ namespace dynamicgraph
 	t0_ (),
 	t1_ (),
 	started_ (false),
-	libname_(libname)
+	libname_(libname),
+	sensorsIn_ (),
+	controlValues_ (),
+	angleEncoder_ (),
+	angleControl_ (),
+	forces_ (),
+	torques_ ()
       {
 	// Set to zero C structures.
 	bzero (timeArray_, TIME_ARRAY_SIZE * sizeof (double));
@@ -98,66 +104,52 @@ namespace dynamicgraph
 
        void 
        Plugin::fillSensors(RobotState *rs,
-			   map<string,SensorValues> & SensorsIn)
+			   map<string,SensorValues> & sensorsIn)
        {
-	 std::vector<double> angles;
-	 angles.resize(rs->angle.length());
-	 std::vector<double> forces(24);
-	 std::vector<double> torques;
-	 torques.resize(rs->torque.length());
-	 std::vector<double> zmp(3);
-	 std::vector<double> basePos(3);
-	 std::vector<double> baseAtt(9);
-
 	 // Update joint values.w
-	 SensorsIn["joints"].setName("angle");
+	 sensorsIn["joints"].setName("angle");
 	 for(unsigned int i=0;i<rs->angle.length();i++)
-	   angles[i] = rs->angle[i];
-	 SensorsIn["joints"].setValues(angles);
+	   angleEncoder_[i] = rs->angle[i];
+	 sensorsIn["joints"].setValues(angleEncoder_);
 
 	 // Update forces
-	 SensorsIn["forces"].setName("force");
+	 sensorsIn["forces"].setName("force");
 	 for (unsigned int i = 0; i < rs->force.length(); ++i)
 	   for (unsigned int j = 0; j < rs->force[i].length(); ++j)
-	     forces[i*6+j] = rs->force[i][j];
-	 SensorsIn["forces"].setValues(forces);
+	     forces_[i*6+j] = rs->force[i][j];
+	 sensorsIn["forces"].setValues(forces_);
 
 	 // Update torque
-	 SensorsIn["torques"].setName("torque");
+	 sensorsIn["torques"].setName("torque");
 	 for (unsigned int j = 0; j < rs->torque.length(); ++j)
-	   torques[j] = rs->torque[j];
-	 SensorsIn["torques"].setValues(torques);
+	   torques_[j] = rs->torque[j];
+	 sensorsIn["torques"].setValues(torques_);
 
 	 // Update attitude
-	 SensorsIn["attitude"].setName ("attitude");
+	 sensorsIn["attitude"].setName ("attitude");
 	 for (unsigned int j = 0; j < rs->attitude [0].length (); ++j)
-	   baseAtt [j] = rs->attitude [0][j];
-	 SensorsIn["attitude"].setValues (baseAtt);
+	   baseAtt_ [j] = rs->attitude [0][j];
+	 sensorsIn["attitude"].setValues (baseAtt_);
        }
 
        void 
        Plugin::readControl(RobotState *mc,
 			   map<string,ControlValues> &controlValues)
        {
-	 std::vector<double> angles(30);
-	 std::vector<double> forces(24);
-	 std::vector<double> torques(30);
-	 std::vector<double> zmp(3);
-	 std::vector<double> baseff(12);
 	 static unsigned int nbit=0;
 	 
 	 // Update joint values.
-	 angles = controlValues["joints"].getValues();
+	 angleControl_ = controlValues["joints"].getValues();
 	 
 	 /*
 	 if (nbit%100==0)
-	   std::cout << "Size of angles: " << angles.size() 
+	   std::cout << "Size of angles: " << angleControl_.size() 
 		     << " Size of mc->angle: " << mc->angle.length() 
 		     << std::endl;
 	 */
-	 for(unsigned int i=0;i<angles.size();i++)
+	 for(unsigned int i=0;i<angleControl_.size();i++)
 	   {
-	     mc->angle[i] = angles[i];
+	     mc->angle[i] = angleControl_[i];
 	     if (nbit%100==0)
 	       std::cout << mc->angle[i] << " ";
 	   }
@@ -169,12 +161,13 @@ namespace dynamicgraph
 	 */
 
 	 // Update forces
-	 zmp =controlValues["zmp"].getValues();
+	 const std::vector<double>& zmp (controlValues["zmp"].getValues());
 	 for(unsigned int i=0;i<3;i++)
 	   mc->zmp[i] = zmp[i];
 
 	 // Update torque
-	 baseff =controlValues["baseff"].getValues();
+	 const std::vector<double>& baseff =
+	   controlValues["baseff"].getValues();
 	 for (int j = 0; j < 3; ++j)
 	   mc->basePos[j] = baseff[j*4+3];
 
@@ -252,6 +245,13 @@ namespace dynamicgraph
        bool
        Plugin::setup (OpenHRP::RobotState* rs, OpenHRP::RobotState* mc)
        {
+	 // Resize vector of angles
+	 angleEncoder_.resize (rs->angle.length());
+	 angleControl_.resize (rs->angle.length());
+	 forces_.resize (6*rs->force.length ());
+	 torques_.resize(rs->torque.length());
+	 baseAtt_.resize (rs->attitude [0].length ());
+
 	 if (!started_)
 	   {
 	     std::cout
@@ -264,16 +264,14 @@ namespace dynamicgraph
 	 captureTime (t0_);
 
 	 // Initialize client to seqplay.
-	 map<string,SensorValues> SensorsIn;
-	 fillSensors(rs,SensorsIn);
-	 std::map<string,ControlValues> controlValues;
+	 fillSensors(rs,sensorsIn_);
 	 try
 	   {
-	     sotController_->setupSetSensors(SensorsIn);
-	     sotController_->getControl(controlValues);
+	     sotController_->setupSetSensors(sensorsIn_);
+	     sotController_->getControl(controlValues_);
 	   } 
 	 catch (std::exception &e) {  std::cout << e.what() <<endl;throw e; }
-	 readControl(mc,controlValues);
+	 readControl(mc,controlValues_);
 
 	// Log control loop end time and compute time spent.
 	captureTime (t1_);
@@ -286,18 +284,16 @@ namespace dynamicgraph
       {
 	// Log control loop start time.
 	captureTime (t0_);
-	map<string,SensorValues> SensorsIn;
-	fillSensors(rs,SensorsIn);
-	std::map<string,ControlValues> controlValues;
+	fillSensors(rs,sensorsIn_);
 
 	try 
 	  {
-	    sotController_->setupSetSensors(SensorsIn);
-	    sotController_->getControl(controlValues);
+	    sotController_->setupSetSensors(sensorsIn_);
+	    sotController_->getControl(controlValues_);
 	  } 
 	catch(std::exception &e) { throw e;} 
 
-	readControl(mc,controlValues);
+	readControl(mc,controlValues_);
 
 	//displayRobotState(mc);
 	// Log control loop end time and compute time spent.
@@ -310,17 +306,15 @@ namespace dynamicgraph
       {
 	// Log control loop start time.
 	captureTime (t0_);
-	map<string,SensorValues> SensorsIn;
-	fillSensors(rs,SensorsIn);
-	std::map<string,ControlValues> controlValues;
+	fillSensors(rs,sensorsIn_);
 
 	bool res = false;
 	try
 	  {
-	    sotController_->setupSetSensors(SensorsIn);
-	    sotController_->getControl(controlValues);
+	    sotController_->setupSetSensors(sensorsIn_);
+	    sotController_->getControl(controlValues_);
 	  } catch(std::exception &e) { throw e;}
-	readControl(mc,controlValues);
+	readControl(mc,controlValues_);
 
 	// Log control loop end time and compute time spent.
 	captureTime (t1_);

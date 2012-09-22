@@ -148,6 +148,20 @@ namespace dynamicgraph
 
 	/// \brief Name of the controller to load
 	std::string libname_;
+	/// Map of sensor readings
+	std::map <string,SensorValues> sensorsIn_;
+	/// Map of control values
+	std::map<string,ControlValues> controlValues_;
+	/// Angular values read by encoders
+	std::vector <double> angleEncoder_;
+	/// Angular values sent to motors
+	std::vector<double> angleControl_;
+	/// Forces read by force sensors
+	std::vector<double> forces_;
+	/// Torques
+	std::vector<double> torques_;
+	/// Attitude of the robot computed by extended Kalman filter.
+	std::vector<double> baseAtt_;
       };
 
     } // end of namespace openhrp.
