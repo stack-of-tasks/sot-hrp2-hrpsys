@@ -150,8 +150,8 @@ namespace dynamicgraph
 	 for(unsigned int i=0;i<angleControl_.size();i++)
 	   {
 	     mc->angle[i] = angleControl_[i];
-	     if (nbit%100==0)
-	       std::cout << mc->angle[i] << " ";
+	     //if (nbit%100==0)
+	     //	       std::cout << mc->angle[i] << " ";
 	   }
 
 	 /* 
