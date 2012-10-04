@@ -68,6 +68,11 @@ namespace dynamicgraph
 
       void Plugin::initSotController()
       {
+	if (libname_.size()==0) {
+	  std::cerr << "Library name is empty"<< std::endl;
+	  return;
+	}
+	  
 	// Load the SotDLRBipedController library.
 	void * SotHRP2ControllerLibrary = dlopen(libname_.c_str(),
 						  RTLD_GLOBAL | RTLD_NOW);
@@ -136,7 +141,7 @@ namespace dynamicgraph
        Plugin::readControl(RobotState *mc,
 			   map<string,ControlValues> &controlValues)
        {
-	 static unsigned int nbit=0;
+	 //static unsigned int nbit=0;
 	 
 	 // Update joint values.
 	 angleControl_ = controlValues["joints"].getValues();
