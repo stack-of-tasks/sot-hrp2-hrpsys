@@ -178,11 +178,6 @@ namespace dynamicgraph
 	   nbit++;
 	 */
 
-	 // Update forces
-	 const std::vector<double>& zmp (controlValues["zmp"].getValues());
-	 for(unsigned int i=0;i<3;i++)
-	   mc->zmp[i] = zmp[i];
-
 	 // Update torque
 	 const std::vector<double>& baseff =
 	   controlValues["baseff"].getValues();
