@@ -278,12 +278,8 @@ namespace dynamicgraph
 
 	 // Initialize client to seqplay.
 	 fillSensors(rs,sensorsIn_);
-	 try
-	   {
-	     sotController_->setupSetSensors(sensorsIn_);
-	     sotController_->getControl(controlValues_);
-	   } 
-	 catch (std::exception &e) {  std::cout << e.what() <<endl;throw e; }
+	 sotController_->setupSetSensors(sensorsIn_);
+	 sotController_->getControl(controlValues_);
 	 readControl(mc,controlValues_);
 
 	// Log control loop end time and compute time spent.
@@ -299,13 +295,8 @@ namespace dynamicgraph
 	captureTime (t0_);
 	fillSensors(rs,sensorsIn_);
 
-	try 
-	  {
-	    sotController_->nominalSetSensors(sensorsIn_);
-	    sotController_->getControl(controlValues_);
-	  } 
-	catch(std::exception &e) { throw e;} 
-
+	sotController_->nominalSetSensors(sensorsIn_);
+	sotController_->getControl(controlValues_);
 	readControl(mc,controlValues_);
 
 	//displayRobotState(mc);
@@ -322,11 +313,8 @@ namespace dynamicgraph
 	fillSensors(rs,sensorsIn_);
 
 	bool res = false;
-	try
-	  {
-	    sotController_->cleanupSetSensors(sensorsIn_);
-	    sotController_->getControl(controlValues_);
-	  } catch(std::exception &e) { throw e;}
+	sotController_->cleanupSetSensors(sensorsIn_);
+	sotController_->getControl(controlValues_);
 	readControl(mc,controlValues_);
 
 	// Log control loop end time and compute time spent.
