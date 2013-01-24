@@ -44,7 +44,10 @@ namespace dynamicgraph
 	angleEncoder_ (),
 	angleControl_ (),
 	forces_ (),
-	torques_ ()
+	torques_ (),
+	baseAtt_ (),
+	accelerometer_ (3),
+	gyrometer_ (3)
       {
 	// Set to zero C structures.
 	bzero (timeArray_, TIME_ARRAY_SIZE * sizeof (double));
@@ -135,6 +138,16 @@ namespace dynamicgraph
 	 for (unsigned int j = 0; j < rs->attitude [0].length (); ++j)
 	   baseAtt_ [j] = rs->attitude [0][j];
 	 sensorsIn["attitude"].setValues (baseAtt_);
+
+	 // Update IMU raw data
+	 sensorsIn ["accelerometer_0"].setName ("accelerometer_0");
+	 sensorsIn ["gyrometer_0"].setName ("gyrometer_0");
+	 for (std::size_t i = 0; i<3; ++i) {
+	   accelerometer_ [i] = rs->accel [0][i];
+	   gyrometer_ [i] = rs->rateGyro [0][i];
+	 }
+	 sensorsIn ["accelerometer_0"].setValues (accelerometer_);
+	 sensorsIn ["gyrometer_0"].setValues (gyrometer_);
        }
 
        void 

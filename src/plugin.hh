@@ -162,6 +162,10 @@ namespace dynamicgraph
 	std::vector<double> torques_;
 	/// Attitude of the robot computed by extended Kalman filter.
 	std::vector<double> baseAtt_;
+	/// Accelerations read by Accelerometers
+	std::vector <double> accelerometer_;
+	/// Angular velocity read by gyrometers
+	std::vector <double> gyrometer_;
       };
 
     } // end of namespace openhrp.
