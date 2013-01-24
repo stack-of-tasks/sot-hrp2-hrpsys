@@ -306,7 +306,7 @@ namespace dynamicgraph
 
 	try 
 	  {
-	    sotController_->setupSetSensors(sensorsIn_);
+	    sotController_->nominalSetSensors(sensorsIn_);
 	    sotController_->getControl(controlValues_);
 	  } 
 	catch(std::exception &e) { throw e;} 
@@ -329,7 +329,7 @@ namespace dynamicgraph
 	bool res = false;
 	try
 	  {
-	    sotController_->setupSetSensors(sensorsIn_);
+	    sotController_->cleanupSetSensors(sensorsIn_);
 	    sotController_->getControl(controlValues_);
 	  } catch(std::exception &e) { throw e;}
 	readControl(mc,controlValues_);
