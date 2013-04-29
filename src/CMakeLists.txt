@@ -22,6 +22,8 @@ INCLUDE_DIRECTORIES(${CMAKE_CURRENT_BINARY_DIR})
 # Add OpenHRP and robot headers to include directory.
 INCLUDE_DIRECTORIES(
   ${GRX_PREFIX}/OpenHRP/Controller/corba
+  ${GRX_PREFIX}/OpenHRP/Common
+  ${GRX_PREFIX}/OpenHRP/DynamicsSimulator/server
   ${GRX_PREFIX}/include
   ${ROBOT_PATH}
   )

@@ -45,7 +45,7 @@ SEARCH_FOR_BOOST()
 FIND_PATH(GRX_PREFIX
   # Make sure bin/DynamicsSimulator exists (to validate that it is
   # _really_ the prefix of an OpenHRP setup).
-  bin/DynamicsSimulator
+  OpenHRP/DynamicsSimulator/server/DynamicsSimulator
   HINTS /opt/grx3.0
   DOC "GRX software prefix (i.e. '/opt/grxX.Y')"
   NO_DEFAULT_PATH)
