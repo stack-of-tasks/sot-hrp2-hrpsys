@@ -19,6 +19,7 @@ INCLUDE(cmake/base.cmake)
 INCLUDE(cmake/boost.cmake)
 INCLUDE(cmake/lapack.cmake)
 INCLUDE(cmake/cpack.cmake)
+INCLUDE(cmake/openhrp.cmake)
 
 SET(PROJECT_NAME sot-hrp2-hrpsys)
 SET(PROJECT_DESCRIPTION "OpenHRP plugin implementing the Stack of Tasks for HRP-2.")
@@ -41,31 +42,9 @@ STRING(REPLACE "-pedantic" "" CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS})
 SET(BOOST_COMPONENTS thread)
 SEARCH_FOR_BOOST()
 
-# Define additional options.
-FIND_PATH(GRX_PREFIX
-  # Make sure bin/DynamicsSimulator exists (to validate that it is
-  # _really_ the prefix of an OpenHRP setup).
-  OpenHRP/DynamicsSimulator/server/DynamicsSimulator
-  HINTS /opt/grx3.0
-  DOC "GRX software prefix (i.e. '/opt/grxX.Y')"
-  NO_DEFAULT_PATH)
-
-SET(ROBOT "" CACHE STRING "GRX robot name (HRP2JRL or HRP2LAAS)")
-SET(ROBOT_PATH "${GRX_PREFIX}/${ROBOT}")
-
-# Validate options.
-IF(ROBOT STREQUAL "")
-  MESSAGE(FATAL_ERROR
-    "The ROBOT mandatory configuration variable is not set.")
-ENDIF()
-IF(NOT IS_DIRECTORY ${ROBOT_PATH})
-  MESSAGE(FATAL_ERROR
-    "The directory '${ROBOT_PATH}' does not exist."
-    "Please check the ROBOT configuration variable.")
-ENDIF()
-
-# Log OpenHRP home and which robot will be used.
-LIST(APPEND LOGGING_WATCHED_VARIABLES GRX_PREFIX ROBOT ROBOT_PATH)
+# Search for openhrp and its robots
+SEARCH_GRX3()
+SEARCH_GRX_ROBOTS("HRP2JRL;HRP2LAAS")
 
 # Search for dependencies.
 ADD_REQUIRED_DEPENDENCY("omniORB4 >= 4.1.1")
