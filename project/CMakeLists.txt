@@ -13,13 +13,17 @@
 # received a copy of the GNU Lesser General Public License along with
 # sot-openhrp. If not, see <http://www.gnu.org/licenses/>.
 
-CONFIG_FILES("sot.xml")
-CONFIG_FILES("sot-bush.xml")
+FOREACH(ROBOT ${GRX_ROBOTS})
+  SET(CMAKE_TEMPORARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/${ROBOT})
+  FILE(MAKE_DIRECTORY ${CMAKE_TEMPORARY_DIR})
+  CONFIGURE_FILE(sot.xml.in      ${CMAKE_TEMPORARY_DIR}/sot.xml      @ONLY)
+  CONFIGURE_FILE(sot-bush.xml.in ${CMAKE_TEMPORARY_DIR}/sot-bush.xml @ONLY)
 
-INSTALL(
-  FILES
-  ${CMAKE_CURRENT_BINARY_DIR}/sot.xml
-  ${CMAKE_CURRENT_BINARY_DIR}/sot-bush.xml
-  DESTINATION ${GRX_PREFIX}/${ROBOT}/project
-  PERMISSIONS OWNER_READ OWNER_WRITE GROUP_READ WORLD_READ
-)
+  INSTALL(
+    FILES
+    ${CMAKE_TEMPORARY_DIR}/sot.xml
+    ${CMAKE_TEMPORARY_DIR}/sot-bush.xml
+    DESTINATION ${GRX_PREFIX}/${ROBOT}/project
+    PERMISSIONS OWNER_READ OWNER_WRITE GROUP_READ WORLD_READ
+  )
+ENDFOREACH(ROBOT)

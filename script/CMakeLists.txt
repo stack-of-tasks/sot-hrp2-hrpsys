@@ -13,12 +13,17 @@
 # received a copy of the GNU Lesser General Public License along with
 # sot-openhrp. If not, see <http://www.gnu.org/licenses/>.
 
-CONFIG_FILES("sot_common.py")
+FOREACH(ROBOT ${GRX_ROBOTS})
+  SET(CMAKE_TEMPORARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/${ROBOT})
+  FILE(MAKE_DIRECTORY ${CMAKE_TEMPORARY_DIR})
+  CONFIGURE_FILE(sot_common.py.in ${CMAKE_TEMPORARY_DIR}/sot_common.py @ONLY)
 
-INSTALL(
-  FILES 
-  ${CMAKE_CURRENT_BINARY_DIR}/sot_common.py
-  sot-stabilizer-enabled.py sot-stabilizer-disabled.py
-  DESTINATION ${GRX_PREFIX}/${ROBOT}/script
-  PERMISSIONS OWNER_READ OWNER_WRITE GROUP_READ WORLD_READ
-)
+  INSTALL(
+    FILES 
+    ${CMAKE_TEMPORARY_DIR}/sot_common.py
+    sot-stabilizer-enabled.py sot-stabilizer-disabled.py
+    DESTINATION ${GRX_PREFIX}/${ROBOT}/script
+    PERMISSIONS OWNER_READ OWNER_WRITE GROUP_READ WORLD_READ
+  )
+ENDFOREACH(ROBOT)
+
